@@ -47,4 +47,4 @@ jobs:
         files: |
           macos-latest/release/tobedeleted
           ubuntu-latest/release/tobedeleted
-          windows-latest/release/tobedeleted
+          windows-latest/release/tobedeleted.exe
