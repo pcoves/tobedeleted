@@ -1,0 +1,50 @@
+name: Rust
+
+on:
+  push:
+    tags:
+    - "v*"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build
+      run: cargo build --verbose --release
+    - uses: actions/upload-artifact@v3
+      with:
+        name: release ${{ matrix.os }}
+        path: target/
+
+  deploy:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: release ubuntu-latest
+        path: ubuntu-latest
+    - uses: actions/download-artifact@v3
+      with:
+        name: release windows-latest
+        path: windows-latest
+    - uses: actions/download-artifact@v3
+      with:
+        name: release macos-latest
+        path: macos-latest
+    - uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        prerelease: false
+        files: |
+          macos-latest/release/tobedeleted
+          ubuntu-latest/release/tobedeleted
+          windows-latest/release/tobedeleted
