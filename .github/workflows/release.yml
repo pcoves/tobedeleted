@@ -17,11 +17,20 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
-    - name: Build
-      run: cargo build --verbose --release
+    - uses: actions/cache@v3
+      with:
+        path: target/
+        key: ${{ matrix.os }}-release-${{ hashFiles('**/Cargo.lock') }}
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: actions-rs/cargo@v1
+      with:
+        command: build
+        args: --release --all-features
     - uses: actions/upload-artifact@v3
       with:
-        name: release ${{ matrix.os }}
+        name: ${{ matrix.os }}
         path: target/
 
   deploy:
@@ -30,21 +39,24 @@ jobs:
     steps:
     - uses: actions/download-artifact@v3
       with:
-        name: release ubuntu-latest
+        name: ubuntu-latest
         path: ubuntu-latest
     - uses: actions/download-artifact@v3
       with:
-        name: release windows-latest
+        name: windows-latest
         path: windows-latest
     - uses: actions/download-artifact@v3
       with:
-        name: release macos-latest
+        name: macos-latest
         path: macos-latest
+    - run: zip --junk-paths ${{ github.event.repository.name }}-${{ github.ref_name }}-linux.zip ubuntu-latest/release/${{ github.event.repository.name }}
+    - run: zip --junk-paths ${{ github.event.repository.name }}-${{ github.ref_name }}-macos.zip macos-latest/release/${{ github.event.repository.name }}
+    - run: zip --junk-paths ${{ github.event.repository.name }}-${{ github.ref_name }}-windows.zip windows-latest/release/${{ github.event.repository.name }}.exe
     - uses: "marvinpinto/action-automatic-releases@latest"
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         prerelease: false
         files: |
-          macos-latest/release/tobedeleted
-          ubuntu-latest/release/tobedeleted
-          windows-latest/release/tobedeleted.exe
+          ${{ github.event.repository.name }}-${{ github.ref_name }}-linux.zip
+          ${{ github.event.repository.name }}-${{ github.ref_name }}-macos.zip
+          ${{ github.event.repository.name }}-${{ github.ref_name }}-windows.zip
